@@ -11,9 +11,9 @@ Software local de controle de contas mensais, com histórico completo salvo em b
 
 ## Levar para outro computador / pendrive
 
-É só copiar esta pasta inteira (`ControleContas`) para o novo lugar. O banco de dados
-(`data/controle.sqlite`) vai junto, com todo o histórico de meses. Não precisa instalar
-nada além do Node.js.
+É só copiar esta pasta inteira (`ControleContas`) para o novo lugar. O banco de dados 
+(`data/controle.sqlite`) vai junto, porém quem clonar precisará criar a pasta e o sqlite.
+Não precisa instalar nada além do Node.js.
 
 ## Como funciona
 
