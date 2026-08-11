@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Criar conta — Controle de Contas</title>
+<style>
+  :root{
+    --bg: #1a1a1e;
+    --panel: #232328;
+    --panel-2: #2a2a30;
+    --panel-3: #303038;
+    --border: #3a3a42;
+    --text: #e8e8ea;
+    --muted: #97979f;
+    --accent: #4fc3f7;
+    --accent-dim: rgba(79,195,247,0.15);
+    --ok: #35c46b;
+    --ok-bg: rgba(53,196,107,0.13);
+    --pending: #e0563a;
+    --pending-bg: rgba(224,86,58,0.12);
+    --radius: 14px;
+  }
+  *{ box-sizing:border-box; }
+  html, body{ height:100%; }
+  body{
+    margin:0;
+    min-height:100vh;
+    background:
+      radial-gradient(circle at 15% 0%, rgba(79,195,247,0.06), transparent 45%),
+      var(--bg);
+    color:var(--text);
+    font-family:'Segoe UI', Consolas, sans-serif;
+    display:flex; align-items:center; justify-content:center;
+    padding:20px;
+  }
+
+  .tela{ width:100%; max-width:440px; }
+
+  .progresso{
+    width:100%; height:5px; background:var(--panel-2); border-radius:99px;
+    overflow:hidden; margin-bottom:22px;
+  }
+  .progresso-fill{
+    height:100%; background:var(--accent); border-radius:99px;
+    transition: width .3s ease;
+    width:0%;
+  }
+
+  .cartao{
+    background:var(--panel); border:1px solid var(--border); border-radius:var(--radius);
+    padding:30px 26px; box-shadow:0 20px 50px rgba(0,0,0,0.35);
+    transition: opacity .16s ease, transform .16s ease;
+  }
+  .cartao.transicao{ opacity:0; transform:translateY(8px); }
+
+  .voltar{
+    background:none; border:none; color:var(--muted); font-size:13px; cursor:pointer;
+    padding:0; margin-bottom:14px; display:inline-flex; align-items:center; gap:4px;
+  }
+  .voltar:hover{ color:var(--accent); }
+
+  .emoji-topo{ font-size:34px; margin-bottom:10px; line-height:1; }
+  h1{ font-size:21px; margin:0 0 6px 0; font-weight:700; letter-spacing:-0.01em; }
+  .subtexto{ color:var(--muted); font-size:13.5px; margin:0 0 22px 0; line-height:1.5; }
+
+  .campo{ margin-bottom:16px; }
+  .campo label{
+    display:block; font-size:11.5px; text-transform:uppercase; letter-spacing:0.05em;
+    color:var(--muted); font-weight:600; margin-bottom:6px;
+  }
+  .campo input, .campo select, .campo textarea{
+    width:100%; background:var(--panel-3); border:1px solid var(--border); color:var(--text);
+    padding:13px 14px; border-radius:10px; font-family:inherit; font-size:16px;
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  .campo input:focus, .campo select:focus, .campo textarea:focus{
+    outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-dim);
+  }
+  .campo textarea{ resize:none; min-height:90px; font-size:15px; }
+  .campo .dica{ font-size:12px; color:var(--muted); margin-top:6px; }
+  .campo .erro{ font-size:12.5px; color:var(--pending); margin-top:6px; display:none; }
+  .campo.com-erro input, .campo.com-erro select{ border-color:var(--pending); }
+  .campo.com-erro .erro{ display:block; }
+
+  .estado-outro{ margin-top:10px; display:none; }
+  .estado-outro.show{ display:block; }
+
+  .acoes{ display:flex; gap:10px; margin-top:8px; }
+  .btn{
+    flex:1; padding:14px 18px; border-radius:10px; border:1px solid var(--border);
+    background:var(--panel-3); color:var(--text); font-family:inherit; font-size:15px;
+    font-weight:600; cursor:pointer; transition:.15s;
+  }
+  .btn:hover{ border-color:var(--accent); color:var(--accent); }
+  .btn.primary{
+    background:var(--accent); border-color:var(--accent); color:#0c2733;
+    flex:2;
+  }
+  .btn.primary:hover{ opacity:0.9; color:#0c2733; }
+  .btn.secundario{ flex:1; }
+  .btn:disabled{ opacity:0.5; cursor:not-allowed; }
+
+  .rodape-login{ text-align:center; margin-top:20px; font-size:13px; color:var(--muted); }
+  .rodape-login a{ color:var(--accent); text-decoration:none; font-weight:600; }
+  .rodape-login a:hover{ text-decoration:underline; }
+
+  .sucesso{ text-align:center; padding:10px 0; }
+  .sucesso .check{
+    width:64px; height:64px; border-radius:50%; background:var(--ok-bg); border:2px solid var(--ok);
+    display:flex; align-items:center; justify-content:center; margin:0 auto 18px auto;
+    font-size:30px; color:var(--ok);
+    animation: popIn .35s ease;
+  }
+  @keyframes popIn{ 0%{ transform:scale(0.5); opacity:0; } 60%{ transform:scale(1.08); } 100%{ transform:scale(1); opacity:1; } }
+
+  .spinner{
+    width:16px; height:16px; border-radius:50%;
+    border:2px solid rgba(12,39,51,0.35); border-top-color:#0c2733;
+    animation: girar .6s linear infinite; display:inline-block; vertical-align:-3px; margin-right:6px;
+  }
+  @keyframes girar{ to{ transform: rotate(360deg); } }
+
+  @media (max-width:480px){
+    .cartao{ padding:26px 20px; }
+    h1{ font-size:19px; }
+  }
+</style>
+</head>
+<body>
+  <div class="tela">
+    <div class="progresso"><div class="progresso-fill" id="progressoFill"></div></div>
+    <div class="cartao" id="cartao"></div>
+  </div>
+
+<script>
+const API = '/api';
+
+const ESTADOS_BR = [
+  'Acre','Alagoas','Amapá','Amazonas','Bahia','Ceará','Distrito Federal','Espírito Santo',
+  'Goiás','Maranhão','Mato Grosso','Mato Grosso do Sul','Minas Gerais','Pará','Paraíba',
+  'Paraná','Pernambuco','Piauí','Rio de Janeiro','Rio Grande do Norte','Rio Grande do Sul',
+  'Rondônia','Roraima','Santa Catarina','São Paulo','Sergipe','Tocantins',
+];
+
+const dados = {
+  usuario:'', email:'', senha:'', confirmacaoSenha:'',
+  nome:'', sobrenome:'', data_nascimento:'', pais:'', estado:'', gasto_bobo:'',
+};
+
+let stepAtual = 0;
+const TOTAL_STEPS = 7; // 0..6
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+async function api(path, opts){
+  const res = await fetch(API + path, Object.assign({ headers:{'Content-Type':'application/json'} }, opts));
+  let data;
+  try{ data = await res.json(); } catch(e){ data = {}; }
+  if(!res.ok){ throw new Error(data.erro || 'Algo deu errado. Tenta de novo.'); }
+  return data;
+}
+
+function atualizarProgresso(){
+  document.getElementById('progressoFill').style.width = ((stepAtual+1) / TOTAL_STEPS * 100) + '%';
+}
+
+function trocarPara(passo){
+  const cartao = document.getElementById('cartao');
+  cartao.classList.add('transicao');
+  setTimeout(() => {
+    stepAtual = passo;
+    renderStep();
+    atualizarProgresso();
+    cartao.classList.remove('transicao');
+  }, 160);
+}
+
+function marcarErro(campoId, mensagem){
+  const el = document.getElementById(campoId);
+  el.classList.add('com-erro');
+  el.querySelector('.erro').textContent = mensagem;
+}
+function limparErro(campoId){
+  const el = document.getElementById(campoId);
+  if(!el) return;
+  el.classList.remove('com-erro');
+}
+
+// ---------- passos ----------
+
+function renderStep(){
+  const cartao = document.getElementById('cartao');
+  if(stepAtual === 0) cartao.innerHTML = telaCredenciais();
+  else if(stepAtual === 1) cartao.innerHTML = telaCampoUnico('👤','nome','Qual é o seu nome?','Ex: Yuri','text');
+  else if(stepAtual === 2) cartao.innerHTML = telaCampoUnico('✍️','sobrenome','E o seu sobrenome?','Ex: Oliveira','text');
+  else if(stepAtual === 3) cartao.innerHTML = telaNascimento();
+  else if(stepAtual === 4) cartao.innerHTML = telaCampoUnico('🌎','pais','De qual país você é?','Ex: Brasil','text');
+  else if(stepAtual === 5) cartao.innerHTML = telaEstado();
+  else if(stepAtual === 6) cartao.innerHTML = telaBonus();
+
+  wireStep();
+}
+
+function telaCredenciais(){
+  return `
+    <div class="emoji-topo">💰</div>
+    <h1>Criar minha conta</h1>
+    <p class="subtexto">Só o essencial pra começar a usar o Controle de Contas.</p>
+
+    <div class="campo" id="campo-usuario">
+      <label>Usuário</label>
+      <input type="text" id="in-usuario" autocomplete="username" value="${escapeHtml(dados.usuario)}" placeholder="Ex: yuri">
+      <div class="dica">Letras, números, ponto ou underline — mínimo 3 caracteres.</div>
+      <div class="erro"></div>
+    </div>
+
+    <div class="campo" id="campo-email">
+      <label>E-mail</label>
+      <input type="email" id="in-email" autocomplete="email" value="${escapeHtml(dados.email)}" placeholder="voce@email.com">
+      <div class="erro"></div>
+    </div>
+
+    <div class="campo" id="campo-senha">
+      <label>Senha</label>
+      <input type="password" id="in-senha" autocomplete="new-password" value="${escapeHtml(dados.senha)}" placeholder="Mínimo 6 caracteres">
+      <div class="erro"></div>
+    </div>
+
+    <div class="campo" id="campo-confirmacao">
+      <label>Confirmar senha</label>
+      <input type="password" id="in-confirmacao" autocomplete="new-password" value="${escapeHtml(dados.confirmacaoSenha)}" placeholder="Repita a senha">
+      <div class="erro"></div>
+    </div>
+
+    <div class="acoes">
+      <button class="btn primary" id="btnContinuar">Continuar</button>
+    </div>
+
+    <div class="rodape-login">Já tem conta? <a href="/login.html">Entrar</a></div>
+  `;
+}
+
+function telaCampoUnico(emoji, campo, pergunta, placeholder, tipo){
+  return `
+    <button class="voltar" id="btnVoltar">← Voltar</button>
+    <div class="emoji-topo">${emoji}</div>
+    <h1>${pergunta}</h1>
+    <div class="campo" id="campo-${campo}">
+      <input type="${tipo}" id="in-${campo}" value="${escapeHtml(dados[campo])}" placeholder="${placeholder}">
+      <div class="erro"></div>
+    </div>
+    <div class="acoes">
+      <button class="btn primary" id="btnContinuar">Continuar</button>
+    </div>
+  `;
+}
+
+function telaNascimento(){
+  return `
+    <button class="voltar" id="btnVoltar">← Voltar</button>
+    <div class="emoji-topo">🎂</div>
+    <h1>Quando você nasceu?</h1>
+    <div class="campo" id="campo-data_nascimento">
+      <input type="date" id="in-data_nascimento" value="${escapeHtml(dados.data_nascimento)}">
+      <div class="erro"></div>
+    </div>
+    <div class="acoes">
+      <button class="btn primary" id="btnContinuar">Continuar</button>
+    </div>
+  `;
+}
+
+function telaEstado(){
+  const options = ESTADOS_BR.map(uf => `<option value="${uf}" ${dados.estado===uf?'selected':''}>${uf}</option>`).join('');
+  const estadoOutro = dados.estado && !ESTADOS_BR.includes(dados.estado) ? dados.estado : '';
+  return `
+    <button class="voltar" id="btnVoltar">← Voltar</button>
+    <div class="emoji-topo">📍</div>
+    <h1>Em qual estado você mora?</h1>
+    <div class="campo" id="campo-estado">
+      <select id="in-estado">
+        <option value="">Selecione...</option>
+        ${options}
+        <option value="__outro__" ${estadoOutro ? 'selected' : ''}>Outro / fora do Brasil</option>
+      </select>
+      <div class="erro"></div>
+    </div>
+    <div class="campo estado-outro ${estadoOutro ? 'show' : ''}" id="campo-estado-outro">
+      <input type="text" id="in-estado-outro" value="${escapeHtml(estadoOutro)}" placeholder="Digite seu estado/região">
+    </div>
+    <div class="acoes">
+      <button class="btn primary" id="btnContinuar">Continuar</button>
+    </div>
+  `;
+}
+
+function telaBonus(){
+  return `
+    <button class="voltar" id="btnVoltar">← Voltar</button>
+    <div class="emoji-topo">👀</div>
+    <h1>Qual é aquele gasto que você sabe que é bobo, mas não resiste?</h1>
+    <p class="subtexto">Só por curiosidade — essa é opcional.</p>
+    <div class="campo" id="campo-gasto_bobo">
+      <textarea id="in-gasto_bobo" placeholder="Ex: delivery de madrugada, streaming que nem uso...">${escapeHtml(dados.gasto_bobo)}</textarea>
+    </div>
+    <div class="acoes">
+      <button class="btn secundario" id="btnPular">Pular</button>
+      <button class="btn primary" id="btnConcluir">Concluir</button>
+    </div>
+  `;
+}
+
+function telaSucesso(){
+  return `
+    <div class="sucesso">
+      <div class="check">✓</div>
+      <h1>Conta criada!</h1>
+      <p class="subtexto">Tudo pronto. Te levando pro app...</p>
+    </div>
+  `;
+}
+
+function telaErroFinal(mensagem){
+  return `
+    <div class="emoji-topo">⚠️</div>
+    <h1>Não deu pra criar a conta</h1>
+    <p class="subtexto">${escapeHtml(mensagem)}</p>
+    <div class="acoes">
+      <button class="btn primary" id="btnVoltarInicio">Revisar dados</button>
+    </div>
+  `;
+}
+
+// ---------- wiring por passo ----------
+
+function focarPrimeiroInput(){
+  const primeiro = document.querySelector('#cartao input, #cartao select, #cartao textarea');
+  if(primeiro){ primeiro.focus(); if(primeiro.select) primeiro.select(); }
+}
+
+function wireStep(){
+  const btnVoltar = document.getElementById('btnVoltar');
+  if(btnVoltar) btnVoltar.onclick = () => trocarPara(stepAtual - 1);
+
+  if(stepAtual === 0) wireCredenciais();
+  else if(stepAtual === 1) wireCampoUnico('nome', validarObrigatorio, () => trocarPara(2));
+  else if(stepAtual === 2) wireCampoUnico('sobrenome', validarObrigatorio, () => trocarPara(3));
+  else if(stepAtual === 3) wireNascimento();
+  else if(stepAtual === 4) wireCampoUnico('pais', validarObrigatorio, () => trocarPara(5));
+  else if(stepAtual === 5) wireEstado();
+  else if(stepAtual === 6) wireBonus();
+
+  document.querySelectorAll('#cartao input, #cartao select, #cartao textarea').forEach(el => {
+    el.addEventListener('keydown', (e) => {
+      if(e.key === 'Enter' && el.tagName !== 'TEXTAREA'){
+        e.preventDefault();
+        const btn = document.getElementById('btnContinuar') || document.getElementById('btnConcluir');
+        if(btn) btn.click();
+      }
+    });
+  });
+
+  focarPrimeiroInput();
+}
+
+function validarObrigatorio(valor){
+  return valor.trim() ? null : 'Esse campo não pode ficar vazio.';
+}
+
+function wireCampoUnico(campo, validar, aoAvancar){
+  document.getElementById('btnContinuar').onclick = () => {
+    const input = document.getElementById('in-' + campo);
+    const valor = input.value.trim();
+    limparErro('campo-' + campo);
+    const erro = validar(valor);
+    if(erro){ marcarErro('campo-' + campo, erro); return; }
+    dados[campo] = valor;
+    aoAvancar();
+  };
+}
+
+function wireNascimento(){
+  document.getElementById('btnContinuar').onclick = () => {
+    const input = document.getElementById('in-data_nascimento');
+    const valor = input.value;
+    limparErro('campo-data_nascimento');
+    if(!valor){ marcarErro('campo-data_nascimento', 'Informe sua data de nascimento.'); return; }
+    const data = new Date(valor + 'T00:00:00');
+    const hoje = new Date();
+    if(data > hoje){ marcarErro('campo-data_nascimento', 'Essa data ainda não chegou :)'); return; }
+    if(data.getFullYear() < 1900){ marcarErro('campo-data_nascimento', 'Data inválida.'); return; }
+    dados.data_nascimento = valor;
+    trocarPara(4);
+  };
+}
+
+function wireEstado(){
+  const selectEstado = document.getElementById('in-estado');
+  const campoOutro = document.getElementById('campo-estado-outro');
+  selectEstado.addEventListener('change', () => {
+    campoOutro.classList.toggle('show', selectEstado.value === '__outro__');
+    if(selectEstado.value === '__outro__') document.getElementById('in-estado-outro').focus();
+  });
+
+  document.getElementById('btnContinuar').onclick = () => {
+    limparErro('campo-estado');
+    let valor = selectEstado.value;
+    if(!valor){ marcarErro('campo-estado', 'Selecione uma opção.'); return; }
+    if(valor === '__outro__'){
+      valor = document.getElementById('in-estado-outro').value.trim();
+      if(!valor){ marcarErro('campo-estado', 'Digite seu estado/região.'); return; }
+    }
+    dados.estado = valor;
+    trocarPara(6);
+  };
+}
+
+function wireBonus(){
+  document.getElementById('btnPular').onclick = () => { dados.gasto_bobo = ''; finalizarCadastro(); };
+  document.getElementById('btnConcluir').onclick = () => {
+    dados.gasto_bobo = document.getElementById('in-gasto_bobo').value.trim();
+    finalizarCadastro();
+  };
+}
+
+function wireCredenciais(){
+  document.getElementById('btnContinuar').onclick = async () => {
+    const usuario = document.getElementById('in-usuario').value.trim();
+    const email = document.getElementById('in-email').value.trim();
+    const senha = document.getElementById('in-senha').value;
+    const confirmacaoSenha = document.getElementById('in-confirmacao').value;
+
+    ['usuario','email','senha','confirmacao'].forEach(c => limparErro('campo-' + (c==='confirmacao'?'confirmacao':c)));
+
+    let ok = true;
+    if(usuario.length < 3 || !/^[a-zA-Z0-9_.]+$/.test(usuario)){
+      marcarErro('campo-usuario', 'Mínimo 3 caracteres — só letras, números, ponto ou underline.');
+      ok = false;
+    }
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+      marcarErro('campo-email', 'Digite um e-mail válido.');
+      ok = false;
+    }
+    if(senha.length < 6){
+      marcarErro('campo-senha', 'Mínimo 6 caracteres.');
+      ok = false;
+    }
+    if(confirmacaoSenha !== senha){
+      marcarErro('campo-confirmacao', 'As senhas não coincidem.');
+      ok = false;
+    }
+    if(!ok) return;
+
+    const botao = document.getElementById('btnContinuar');
+    const textoOriginal = botao.textContent;
+    botao.disabled = true;
+    botao.innerHTML = '<span class="spinner"></span>Verificando...';
+    try{
+      const disponibilidade = await api('/auth/verificar-disponibilidade', {
+        method:'POST', body: JSON.stringify({ usuario, email })
+      });
+      if(!disponibilidade.usuarioDisponivel){
+        marcarErro('campo-usuario', 'Esse usuário já existe.');
+        ok = false;
+      }
+      if(!disponibilidade.emailDisponivel){
+        marcarErro('campo-email', 'Esse e-mail já está cadastrado.');
+        ok = false;
+      }
+      if(!ok) return;
+
+      dados.usuario = usuario;
+      dados.email = email;
+      dados.senha = senha;
+      dados.confirmacaoSenha = confirmacaoSenha;
+      trocarPara(1);
+    } catch(e){
+      marcarErro('campo-usuario', e.message);
+    } finally {
+      botao.disabled = false;
+      botao.textContent = textoOriginal;
+    }
+  };
+}
+
+async function finalizarCadastro(){
+  const cartao = document.getElementById('cartao');
+  cartao.classList.add('transicao');
+  await new Promise(r => setTimeout(r, 160));
+  cartao.innerHTML = `<div class="sucesso"><div class="check"><span class="spinner" style="border-top-color:var(--ok); border-color:rgba(53,196,107,0.3);"></span></div><h1>Criando sua conta...</h1></div>`;
+  cartao.classList.remove('transicao');
+
+  try{
+    await api('/auth/registrar', { method:'POST', body: JSON.stringify(dados) });
+    cartao.classList.add('transicao');
+    await new Promise(r => setTimeout(r, 160));
+    cartao.innerHTML = telaSucesso();
+    cartao.classList.remove('transicao');
+    document.getElementById('progressoFill').style.width = '100%';
+    setTimeout(() => { window.location.href = '/'; }, 1400);
+  } catch(e){
+    cartao.classList.add('transicao');
+    await new Promise(r => setTimeout(r, 160));
+    cartao.innerHTML = telaErroFinal(e.message);
+    cartao.classList.remove('transicao');
+    document.getElementById('btnVoltarInicio').onclick = () => trocarPara(0);
+  }
+}
+
+renderStep();
+atualizarProgresso();
+</script>
+</body>
+</html>

@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Entrar — Controle de Contas</title>
+<style>
+  :root{
+    --bg: #1a1a1e;
+    --panel: #232328;
+    --panel-3: #303038;
+    --border: #3a3a42;
+    --text: #e8e8ea;
+    --muted: #97979f;
+    --accent: #4fc3f7;
+    --accent-dim: rgba(79,195,247,0.15);
+    --pending: #e0563a;
+    --radius: 14px;
+  }
+  *{ box-sizing:border-box; }
+  html, body{ height:100%; }
+  body{
+    margin:0; min-height:100vh;
+    background: radial-gradient(circle at 15% 0%, rgba(79,195,247,0.06), transparent 45%), var(--bg);
+    color:var(--text); font-family:'Segoe UI', Consolas, sans-serif;
+    display:flex; align-items:center; justify-content:center; padding:20px;
+  }
+  .tela{ width:100%; max-width:400px; }
+  .cartao{
+    background:var(--panel); border:1px solid var(--border); border-radius:var(--radius);
+    padding:32px 26px; box-shadow:0 20px 50px rgba(0,0,0,0.35);
+  }
+  .emoji-topo{ font-size:34px; margin-bottom:10px; line-height:1; text-align:center; }
+  h1{ font-size:21px; margin:0 0 22px 0; font-weight:700; text-align:center; }
+  .campo{ margin-bottom:16px; }
+  .campo label{
+    display:block; font-size:11.5px; text-transform:uppercase; letter-spacing:0.05em;
+    color:var(--muted); font-weight:600; margin-bottom:6px;
+  }
+  .campo input{
+    width:100%; background:var(--panel-3); border:1px solid var(--border); color:var(--text);
+    padding:13px 14px; border-radius:10px; font-family:inherit; font-size:16px;
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  .campo input:focus{ outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-dim); }
+  .campo .erro{ font-size:12.5px; color:var(--pending); margin-top:6px; display:none; }
+  .campo.com-erro input{ border-color:var(--pending); }
+  .campo.com-erro .erro{ display:block; }
+  .btn{
+    width:100%; padding:14px 18px; border-radius:10px; border:1px solid var(--accent);
+    background:var(--accent); color:#0c2733; font-family:inherit; font-size:15px;
+    font-weight:700; cursor:pointer; margin-top:6px;
+  }
+  .btn:hover{ opacity:0.9; }
+  .btn:disabled{ opacity:0.5; cursor:not-allowed; }
+  .spinner{
+    width:16px; height:16px; border-radius:50%;
+    border:2px solid rgba(12,39,51,0.35); border-top-color:#0c2733;
+    animation: girar .6s linear infinite; display:inline-block; vertical-align:-3px; margin-right:6px;
+  }
+  @keyframes girar{ to{ transform: rotate(360deg); } }
+  .rodape{ text-align:center; margin-top:20px; font-size:13px; color:var(--muted); }
+  .rodape a{ color:var(--accent); text-decoration:none; font-weight:600; }
+  .rodape a:hover{ text-decoration:underline; }
+</style>
+</head>
+<body>
+  <div class="tela">
+    <div class="cartao">
+      <div class="emoji-topo">💰</div>
+      <h1>Entrar</h1>
+      <div class="campo" id="campo-identificador">
+        <label>Usuário ou e-mail</label>
+        <input type="text" id="in-identificador" autocomplete="username">
+        <div class="erro"></div>
+      </div>
+      <div class="campo" id="campo-senha">
+        <label>Senha</label>
+        <input type="password" id="in-senha" autocomplete="current-password">
+        <div class="erro"></div>
+      </div>
+      <button class="btn" id="btnEntrar">Entrar</button>
+      <div class="rodape">Ainda não tem conta? <a href="/cadastro.html">Criar conta</a></div>
+    </div>
+  </div>
+
+<script>
+function limparErro(id){ document.getElementById(id).classList.remove('com-erro'); }
+function marcarErro(id, msg){
+  const el = document.getElementById(id);
+  el.classList.add('com-erro');
+  el.querySelector('.erro').textContent = msg;
+}
+
+async function tentarLogin(){
+  const identificador = document.getElementById('in-identificador').value.trim();
+  const senha = document.getElementById('in-senha').value;
+  limparErro('campo-identificador');
+  limparErro('campo-senha');
+
+  if(!identificador){ marcarErro('campo-identificador', 'Informe seu usuário ou e-mail.'); return; }
+  if(!senha){ marcarErro('campo-senha', 'Informe sua senha.'); return; }
+
+  const botao = document.getElementById('btnEntrar');
+  const textoOriginal = botao.textContent;
+  botao.disabled = true;
+  botao.innerHTML = '<span class="spinner"></span>Entrando...';
+
+  try{
+    const res = await fetch('/api/auth/login', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ usuario: identificador, email: identificador, senha }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok){ throw new Error(data.erro || 'Não foi possível entrar.'); }
+    window.location.href = '/';
+  } catch(e){
+    marcarErro('campo-senha', e.message);
+    botao.disabled = false;
+    botao.textContent = textoOriginal;
+  }
+}
+
+document.getElementById('btnEntrar').addEventListener('click', tentarLogin);
+document.querySelectorAll('input').forEach(inp => {
+  inp.addEventListener('keydown', (e) => { if(e.key === 'Enter'){ e.preventDefault(); tentarLogin(); } });
+});
+document.getElementById('in-identificador').focus();
+</script>
+</body>
+</html>
